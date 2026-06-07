@@ -135,6 +135,55 @@ class FrontierRepository:
         )
         conn.execute(stmt)
 
+    def update_host_state(self, host: str, **fields: Any) -> None:
+        """Upsert a ``host_state`` row, setting the given columns.
+
+        Creates the row if absent (with the provided fields) or updates those
+        columns on conflict. Used by the politeness layer to cache robots.txt.
+        """
+        if not fields:
+            return
+        with self.engine.begin() as conn:
+            insert = self._insert(conn.dialect.name)
+            stmt = (
+                insert(host_state)
+                .values(host=host, **fields)
+                .on_conflict_do_update(index_elements=["host"], set_=fields)
+            )
+            conn.execute(stmt)
+
+    def advance_host_window(
+        self, host: str, *, last_fetch_at: Any, next_allowed_fetch_at: Any
+    ) -> None:
+        """Record a fetch and push the host's window forward, *monotonically*.
+
+        ``next_allowed_fetch_at`` only ever moves later: it is set to the greater
+        of the existing value and the proposed one, so concurrent workers can't
+        shrink the crawl-delay spacing by racing with an earlier deadline.
+        """
+        with self.engine.begin() as conn:
+            insert = self._insert(conn.dialect.name)
+            ins = insert(host_state).values(
+                host=host,
+                last_fetch_at=last_fetch_at,
+                next_allowed_fetch_at=next_allowed_fetch_at,
+            )
+            greatest = sa.func.greatest if conn.dialect.name == "postgresql" else sa.func.max
+            monotonic = greatest(
+                sa.func.coalesce(
+                    host_state.c.next_allowed_fetch_at, ins.excluded.next_allowed_fetch_at
+                ),
+                ins.excluded.next_allowed_fetch_at,
+            )
+            stmt = ins.on_conflict_do_update(
+                index_elements=["host"],
+                set_={
+                    "last_fetch_at": ins.excluded.last_fetch_at,
+                    "next_allowed_fetch_at": monotonic,
+                },
+            )
+            conn.execute(stmt)
+
     # --- lookups ---
 
     def get_by_id(self, url_id: int) -> FrontierUrl | None:
