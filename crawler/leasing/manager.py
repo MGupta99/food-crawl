@@ -198,10 +198,13 @@ class LeaseManager:
                     "lease_expires_at": None,
                     "lease_token": None,
                 }
-            conn.execute(
+            result = conn.execute(
                 sa.update(frontier_urls).where(*self._owned(url_id, lease_token)).values(**values)
             )
-        return True
+        # The read above does not lock the row, so a concurrent worker could
+        # have stolen the lease between the SELECT and this UPDATE. Trust the
+        # write's rowcount rather than the earlier read.
+        return result.rowcount > 0
 
     @staticmethod
     def _owned(url_id: int, lease_token: str):
