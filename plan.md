@@ -1018,12 +1018,12 @@ Safe concurrent work distribution. *Done when:* concurrent workers never lease t
 
 Respectful, compliant crawling. *Done when:* disallowed paths are skipped and per-host spacing is enforced.
 
-- Fetch + parse + cache robots.txt in `host_state` (with TTL)
-- Allow/disallow path check before fetch
-- Honor crawl-delay; default 5–10s spacing via `next_allowed_fetch_at`
-- Enforce 1 concurrent request per host
-- Descriptive User-Agent (`ChiFoodCrawler/0.1 (+mailto:...)`)
-- Tests for allow/deny and delay computation
+- [x] Fetch + parse + cache robots.txt in `host_state` (with TTL)
+- [x] Allow/disallow path check before fetch
+- [x] Honor crawl-delay; default 5–10s spacing via `next_allowed_fetch_at`
+- [x] Enforce 1 concurrent request per host
+- [x] Descriptive User-Agent (`ChiFoodCrawler/0.1 (+mailto:...)`)
+- [x] Tests for allow/deny and delay computation
 
 ### 6. Fetcher (`crawler/fetcher/`)
 

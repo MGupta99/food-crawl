@@ -135,6 +135,24 @@ class FrontierRepository:
         )
         conn.execute(stmt)
 
+    def update_host_state(self, host: str, **fields: Any) -> None:
+        """Upsert a ``host_state`` row, setting the given columns.
+
+        Creates the row if absent (with the provided fields) or updates those
+        columns on conflict. Used by the politeness layer to cache robots.txt and
+        advance per-host fetch windows.
+        """
+        if not fields:
+            return
+        with self.engine.begin() as conn:
+            insert = self._insert(conn.dialect.name)
+            stmt = (
+                insert(host_state)
+                .values(host=host, **fields)
+                .on_conflict_do_update(index_elements=["host"], set_=fields)
+            )
+            conn.execute(stmt)
+
     # --- lookups ---
 
     def get_by_id(self, url_id: int) -> FrontierUrl | None:

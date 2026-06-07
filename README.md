@@ -10,6 +10,9 @@ for the full architecture, design principles, and the implementation todo list.
 infra/terraform/   # Milestone 1: GCP foundation (VPC, GCS, Cloud SQL, IAM, ...)
 crawler/           # focused crawler components
   seeds/           # seed list + topic lexicon (targeting inputs)
+  frontier/        # URL frontier schema, repository, migrations
+  leasing/         # concurrent-safe URL leasing
+  robots/          # robots.txt compliance + per-host politeness
 tests/             # unit tests
 ```
 
@@ -46,6 +49,16 @@ uv run chi-food-frontier --dsn "$FRONTIER_DSN" stats        # frontier counts by
 FRONTIER_DSN=... uv run alembic revision --autogenerate -m "describe change"
 FRONTIER_DSN=... uv run alembic upgrade head
 ```
+
+### Robots & politeness
+
+`crawler/robots/` enforces the Robots Exclusion Protocol and per-host spacing.
+`parse_robots()` resolves `Allow`/`Disallow`/`Crawl-delay` for our user-agent
+(`ChiFoodCrawler/0.1 (+mailto:...)`; set the contact via `CRAWLER_CONTACT_EMAIL`).
+`PolitenessManager` fetches and caches robots.txt in `host_state` with a TTL,
+authorizes individual paths, and advances `next_allowed_fetch_at` to honor
+crawl-delay (one in-flight request per host). HTTP is injected as a
+`RobotsFetcher`, so the real fetcher (component 6) plugs in without coupling.
 
 ## Infrastructure
 
