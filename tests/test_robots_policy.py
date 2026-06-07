@@ -142,3 +142,32 @@ def test_note_fetch_defaults_delay_when_no_state(repo):
     mgr = _mgr(repo, FakeFetcher(RobotsResponse(200, "")))
     nxt = mgr.note_fetch("fresh.com", when=datetime(2026, 1, 1))
     assert nxt == datetime(2026, 1, 1) + timedelta(seconds=5)
+
+
+def test_note_fetch_window_is_monotonic(repo):
+    # A racing worker already pushed the window far out; a later note_fetch with
+    # an earlier proposed deadline must not shrink it.
+    mgr = _mgr(repo, FakeFetcher(RobotsResponse(200, "")))
+    mgr.note_fetch("h.com", when=datetime(2026, 1, 1, 12, 0, 0))  # -> 12:00:05
+    repo.update_host_state("h.com", next_allowed_fetch_at=datetime(2026, 1, 1, 12, 0, 30))
+
+    mgr.note_fetch("h.com", when=datetime(2026, 1, 1, 12, 0, 1))  # proposes 12:00:06
+    assert repo.get_host_state("h.com").next_allowed_fetch_at == datetime(2026, 1, 1, 12, 0, 30)
+
+
+def test_robots_refresh_does_not_clobber_allow_kill_switch(repo):
+    # Operator disables the host; a successful robots refresh must leave allow=False.
+    repo.update_host_state("h.com", allow=False)
+    mgr = _mgr(repo, FakeFetcher(RobotsResponse(200, "User-agent: *\nDisallow: /x\n")))
+    # Bypass authorize's early return to exercise the refresh path directly.
+    mgr._resolve_rules("https://h.com/a", "h.com", repo.get_host_state("h.com"))
+    assert repo.get_host_state("h.com").allow is False
+
+
+def test_robots_url_normalized_to_hostname(repo):
+    # Cache is keyed by hostname, so the robots URL drops port/userinfo for a
+    # stable, consistent fetch origin.
+    fetcher = FakeFetcher(RobotsResponse(200, ""))
+    mgr = _mgr(repo, fetcher)
+    mgr.authorize("https://h.com:8080/some/path")
+    assert fetcher.calls == ["https://h.com/robots.txt"]

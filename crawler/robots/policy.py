@@ -22,11 +22,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from crawler.frontier.models import HostState
 from crawler.frontier.repository import FrontierRepository
 
-from .parser import RobotsRules, parse_robots, robots_url_for
+from .parser import RobotsRules, parse_robots
 from .useragent import DEFAULT_USER_AGENT
 
 DEFAULT_ROBOTS_TTL_SECONDS = 24 * 60 * 60  # re-fetch robots.txt at most daily
@@ -113,9 +114,13 @@ class PolitenessManager:
         if state is not None and self._robots_fresh(state):
             return parse_robots(state.robots_txt or "", self.user_agent)
 
-        response = self.fetcher(robots_url_for(canonical_url))
+        response = self.fetcher(_robots_url(canonical_url))
         now = self._clock()
 
+        # robots caching never writes `allow`: that column is a manual
+        # kill-switch (checked in authorize), and an in-flight refresh must not
+        # clobber an operator's `allow=false` set after our check. A brand-new
+        # row created here picks up the column's server default (allow=true).
         if 200 <= response.status < 300:
             text = response.text or ""
             rules = parse_robots(text, self.user_agent)
@@ -124,7 +129,6 @@ class PolitenessManager:
                 robots_txt=text,
                 robots_fetched_at=now,
                 crawl_delay_seconds=self._effective_delay(rules),
-                allow=True,
             )
             return rules
 
@@ -135,7 +139,6 @@ class PolitenessManager:
                 robots_txt="",
                 robots_fetched_at=now,
                 crawl_delay_seconds=self.default_delay_seconds,
-                allow=True,
             )
             return parse_robots("", self.user_agent)
 
@@ -176,21 +179,28 @@ class PolitenessManager:
         state = self.repo.get_host_state(host)
         delay = state.crawl_delay_seconds if state is not None else self.default_delay_seconds
         next_allowed = when + timedelta(seconds=delay)
-        self.repo.update_host_state(
+        # Monotonic: never shrink an existing (later) window set by a racing worker.
+        self.repo.advance_host_window(
             host, last_fetch_at=when, next_allowed_fetch_at=next_allowed
         )
         return next_allowed
 
 
 def _host_of(url: str) -> str:
-    from urllib.parse import urlsplit
-
     return (urlsplit(url).hostname or "").lower()
 
 
 def _path_of(url: str) -> str:
-    from urllib.parse import urlsplit
-
     parts = urlsplit(url)
     path = parts.path or "/"
     return f"{path}?{parts.query}" if parts.query else path
+
+
+def _robots_url(url: str) -> str:
+    """robots.txt URL at hostname granularity, matching the hostname-keyed
+    ``host_state`` cache. The port/userinfo are dropped so every URL on a host
+    resolves to the same robots.txt (and the same cached rules)."""
+    parts = urlsplit(url)
+    scheme = parts.scheme or "https"
+    host = (parts.hostname or "").lower()
+    return f"{scheme}://{host}/robots.txt"
