@@ -988,11 +988,11 @@ Terraform-managed project scaffolding that everything else depends on. *Done whe
 
 Curated targeting inputs, the single source of truth for relevance. *Done when:* seeds load into `frontier_urls` and the lexicon is importable by both URL and content scorers.
 
-- Populate `seeds.yaml` with verified Chicago food-blog domains (confirm each allows crawling)
-- Author `lexicon.yaml` (geo terms + food/restaurant terms)
-- Seed loader that inserts seeds as `is_seed=true`, `topic_source=seed`, `depth=0`
-- Lexicon parser exposing terms/weights to URL + content scorers
-- Unit tests for loader and lexicon parsing
+- [x] Populate `seeds.yaml` with verified Chicago food-blog domains (confirm each allows crawling)
+- [x] Author `lexicon.yaml` (geo terms + food/restaurant terms)
+- [x] Seed loader that inserts seeds as `is_seed=true`, `topic_source=seed`, `depth=0`
+- [x] Lexicon parser exposing terms/weights to URL + content scorers
+- [x] Unit tests for loader and lexicon parsing
 
 ### 3. URL frontier schema (`crawler/frontier/`)
 

@@ -1,0 +1,87 @@
+# Topic lexicon for Chicago restaurant food-blog relevance.
+#
+# This file is the single source of truth for BOTH discovery-time URL-path
+# heuristics (crawler/relevance) and content-time relevance scoring
+# (processing/relevance). Terms map to a weight in (0, 1] expressing how
+# strongly the term signals on-topic Chicago-food content.
+#
+# Matching is case-insensitive and whitespace-flexible, so multi-word terms
+# (e.g. "deep dish") also match hyphenated URL slugs (e.g. "/deep-dish/").
+
+# Geographic terms: Chicago and its neighborhoods / dining districts.
+geo_terms:
+  chicago: 1.0
+  chicagoland: 0.9
+  chi-town: 0.7
+  the loop: 0.8
+  west loop: 0.9
+  wicker park: 0.9
+  logan square: 0.9
+  pilsen: 0.9
+  hyde park: 0.85
+  lincoln park: 0.85
+  river north: 0.85
+  gold coast: 0.8
+  old town: 0.8
+  bucktown: 0.85
+  ukrainian village: 0.85
+  andersonville: 0.85
+  uptown: 0.75
+  lakeview: 0.8
+  wrigleyville: 0.8
+  bridgeport: 0.8
+  chinatown: 0.8
+  little italy: 0.8
+  humboldt park: 0.8
+  rogers park: 0.8
+  fulton market: 0.9
+  south loop: 0.8
+  near north side: 0.75
+  streeterville: 0.75
+  avondale: 0.8
+  albany park: 0.75
+
+# Food / restaurant terms.
+food_terms:
+  restaurant: 1.0
+  restaurants: 1.0
+  # Generic on-topic word; deliberately low-weighted since it appears widely
+  # outside Chicago restaurant content (recipes, grocery, nutrition, news).
+  food: 0.5
+  menu: 0.8
+  dish: 0.7
+  dishes: 0.7
+  chef: 0.85
+  reservation: 0.8
+  reservations: 0.8
+  tasting menu: 0.9
+  tasting: 0.6
+  brunch: 0.75
+  dinner: 0.6
+  lunch: 0.55
+  eatery: 0.85
+  dining: 0.85
+  foodie: 0.8
+  deep dish: 0.95
+  pizza: 0.7
+  michelin: 0.95
+  michelin star: 0.95
+  byob: 0.7
+  cocktail: 0.6
+  cocktails: 0.6
+  bar: 0.5
+  cuisine: 0.75
+  food truck: 0.8
+  steakhouse: 0.8
+  bistro: 0.8
+  cafe: 0.6
+  bakery: 0.65
+  brewery: 0.65
+  speakeasy: 0.7
+  italian beef: 0.95
+  hot dog: 0.7
+  review: 0.55
+  best restaurants: 0.95
+  where to eat: 0.9
+  new restaurant: 0.85
+  opening: 0.5
