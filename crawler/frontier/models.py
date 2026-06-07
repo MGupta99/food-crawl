@@ -24,6 +24,7 @@ class FrontierUrl:
     last_attempt_at: datetime | None
     next_fetch_after: datetime | None
     lease_expires_at: datetime | None
+    lease_token: str | None
     retry_count: int
     content_hash: str | None
     failure_reason: str | None
@@ -45,6 +46,7 @@ class FrontierUrl:
             last_attempt_at=row["last_attempt_at"],
             next_fetch_after=row["next_fetch_after"],
             lease_expires_at=row["lease_expires_at"],
+            lease_token=row["lease_token"],
             retry_count=row["retry_count"],
             content_hash=row["content_hash"],
             failure_reason=row["failure_reason"],

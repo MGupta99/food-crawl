@@ -83,6 +83,14 @@ def test_lease_does_not_return_already_leased(engine, repo):
     assert first_ids.isdisjoint(second_ids)
 
 
+def test_lease_never_exceeds_batch(engine, repo):
+    for i in range(50):
+        _add(repo, f"u{i}")
+    leased = LeaseManager(engine).lease(batch=10)
+    assert len(leased) == 10
+    assert repo.count_urls(status=FrontierStatus.FETCHING) == 10
+
+
 def test_lease_empty_when_nothing_eligible(engine, repo):
     assert LeaseManager(engine).lease() == []
 
@@ -118,18 +126,60 @@ def test_reclaim_expired_leases(engine, repo):
     assert mgr.reclaim_expired_leases() == 0
 
 
+def test_lease_stamps_unique_token(engine, repo):
+    _add(repo, "a")
+    _add(repo, "b")
+    leased = LeaseManager(engine).lease()
+    tokens = {u.lease_token for u in leased}
+    assert len(leased) == 2
+    assert all(u.lease_token for u in leased)
+    assert len(tokens) == 1  # one token per lease() call, shared by the batch
+
+
 def test_complete_fetch_sets_fetched_and_content_hash(engine, repo):
     _add(repo, "x")
     mgr = LeaseManager(engine)
     leased = mgr.lease()[0]
 
-    assert mgr.complete_fetch(leased.id, content_hash="sha256:abc") is True
+    assert mgr.complete_fetch(leased.id, leased.lease_token, content_hash="sha256:abc") is True
     row = repo.get_by_id(leased.id)
     assert row.status == FrontierStatus.FETCHED.value
     assert row.content_hash == "sha256:abc"
     assert row.lease_expires_at is None
+    assert row.lease_token is None
 
-    assert mgr.complete_fetch(99999) is False
+    assert mgr.complete_fetch(99999, "no-such-token") is False
+
+
+def test_complete_fetch_rejects_stale_token(engine, repo):
+    # A slow worker's lease expires and the row is re-leased by another worker.
+    _add(repo, "x")
+    mgr = LeaseManager(engine)
+    first = mgr.lease()[0]
+    _set(engine, "x", lease_expires_at=datetime(2000, 1, 1))
+    second = mgr.lease()[0]
+    assert first.lease_token != second.lease_token
+
+    # The original worker must not be able to finalize the re-leased row.
+    assert mgr.complete_fetch(first.id, first.lease_token) is False
+    row = repo.get_by_id(first.id)
+    assert row.status == FrontierStatus.FETCHING.value
+    assert row.lease_token == second.lease_token
+
+    # The current lease holder still succeeds.
+    assert mgr.complete_fetch(second.id, second.lease_token) is True
+
+
+def test_mark_failed_rejects_stale_token(engine, repo):
+    _add(repo, "x")
+    mgr = LeaseManager(engine)
+    first = mgr.lease()[0]
+    _set(engine, "x", lease_expires_at=datetime(2000, 1, 1))
+    mgr.lease()  # re-leased by another worker, new token
+
+    assert mgr.mark_failed(first.id, "boom", first.lease_token) is False
+    assert repo.get_by_id(first.id).status == FrontierStatus.FETCHING.value
+    assert repo.get_by_id(first.id).retry_count == 0  # stale call did not bump retries
 
 
 def test_mark_failed_requeues_until_max_retries(engine, repo):
@@ -137,12 +187,13 @@ def test_mark_failed_requeues_until_max_retries(engine, repo):
     mgr = LeaseManager(engine, max_retries=2)
     leased = mgr.lease()[0]
 
-    assert mgr.mark_failed(leased.id, "boom", retry=True) is True
+    assert mgr.mark_failed(leased.id, "boom", leased.lease_token, retry=True) is True
     row = repo.get_by_id(leased.id)
     assert row.status == FrontierStatus.QUEUED.value
     assert row.retry_count == 1
     assert row.failure_reason == "boom"
     assert row.lease_expires_at is None
+    assert row.lease_token is None
 
 
 def test_mark_failed_terminal_when_retries_exhausted(engine, repo):
@@ -150,7 +201,7 @@ def test_mark_failed_terminal_when_retries_exhausted(engine, repo):
     mgr = LeaseManager(engine, max_retries=0)
     leased = mgr.lease()[0]
 
-    assert mgr.mark_failed(leased.id, "fatal", retry=True) is True
+    assert mgr.mark_failed(leased.id, "fatal", leased.lease_token, retry=True) is True
     assert repo.get_by_id(leased.id).status == FrontierStatus.FAILED.value
 
 
@@ -158,12 +209,12 @@ def test_mark_failed_no_retry_marks_failed(engine, repo):
     _add(repo, "x")
     mgr = LeaseManager(engine, max_retries=5)
     leased = mgr.lease()[0]
-    assert mgr.mark_failed(leased.id, "stop", retry=False) is True
+    assert mgr.mark_failed(leased.id, "stop", leased.lease_token, retry=False) is True
     assert repo.get_by_id(leased.id).status == FrontierStatus.FAILED.value
 
 
 def test_mark_failed_missing_row_returns_false(engine, repo):
-    assert LeaseManager(engine).mark_failed(99999, "nope") is False
+    assert LeaseManager(engine).mark_failed(99999, "nope", "no-such-token") is False
 
 
 def test_no_double_lease_under_concurrent_workers(tmp_path):

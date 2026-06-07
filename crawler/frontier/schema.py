@@ -58,6 +58,7 @@ frontier_urls = sa.Table(
     sa.Column("last_attempt_at", sa.DateTime(timezone=True)),
     sa.Column("next_fetch_after", sa.DateTime(timezone=True), nullable=False, server_default=_now),
     sa.Column("lease_expires_at", sa.DateTime(timezone=True)),
+    sa.Column("lease_token", sa.Text),
     sa.Column("retry_count", sa.Integer, nullable=False, server_default=sa.text("0")),
     sa.Column("content_hash", sa.Text),
     sa.Column("failure_reason", sa.Text),
