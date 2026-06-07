@@ -1,0 +1,24 @@
+# Curated seed hosts for the focused crawl.
+#
+# Seed hosts are treated as trusted (is_seed = true): they are crawled without a
+# relevance gate, and their outbound links are the entry point for discovery.
+#
+# IMPORTANT — crawl permission:
+#   Listing a site here does NOT bypass robots.txt. The crawler still fetches and
+#   honors robots.txt + crawl-delay at runtime (see crawler/robots). Before a
+#   large crawl, a human should confirm each site's Terms of Service permit
+#   crawling. The entries below are well-known Chicago dining publications and
+#   blogs included as starting candidates; verify before scaling up.
+seeds:
+  - url: https://chicago.eater.com/
+    notes: Eater Chicago - restaurant news, openings, and guides
+  - url: https://www.timeout.com/chicago/restaurants
+    notes: Time Out Chicago - restaurant and dining coverage
+  - url: https://www.theinfatuation.com/chicago
+    notes: The Infatuation - Chicago restaurant reviews and guides
+  - url: https://www.chicagomag.com/chicago-magazine/dining-drinking/
+    notes: Chicago Magazine - dining and drinking section
+  - url: https://www.choosechicago.com/things-to-do/food-drink/
+    notes: Choose Chicago - city tourism food & drink guides
+  - url: https://www.chicagofoodauthority.com/
+    notes: Chicago Food Authority - local food blog
