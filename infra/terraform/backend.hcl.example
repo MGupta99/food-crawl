@@ -1,0 +1,4 @@
+# Copy to backend.hcl and fill in, then run:
+#   terraform init -backend-config=backend.hcl
+bucket = "REPLACE_WITH_YOUR_TF_STATE_BUCKET"
+prefix = "food-crawl/foundation"

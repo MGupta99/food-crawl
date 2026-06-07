@@ -1,0 +1,22 @@
+# Local Terraform state and caches (the provider lock file IS committed)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Saved plan output (binary; may contain sensitive values)
+tfplan
+*.tfplan
+
+# Variable + backend files that hold environment-specific or sensitive values
+*.tfvars
+*.tfvars.json
+backend.hcl
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Keep the example templates tracked
+!*.tfvars.example

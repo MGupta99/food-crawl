@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and edit. Required values have no default.
+
+project_id = "my-food-crawl-project"
+
+# Optional overrides (defaults shown):
+# region                 = "us-central1"
+# zone                   = "us-central1-a"
+# environment            = "dev"
+# name_prefix            = "chi-food"
+# bucket_prefix          = null            # defaults to "<project_id>-chi-food"
+# bucket_location        = "US"
+# db_tier                = "db-custom-1-3840"
+# db_availability_type   = "ZONAL"
+# db_deletion_protection = true
+# crawler_contact_email  = "contact@example.com"
+
+# labels = {
+#   team  = "data-platform"
+#   owner = "you"
+# }
