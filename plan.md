@@ -1008,11 +1008,11 @@ Cloud SQL tables that drive what to crawl next. *Done when:* migrations create t
 
 Safe concurrent work distribution. *Done when:* concurrent workers never lease the same URL and expired leases are reclaimed.
 
-- Transactional lease query (`ORDER BY priority DESC, relevance_score DESC ... FOR UPDATE SKIP LOCKED`)
-- Mark leased rows `status=fetching`, `lease_expires_at=now+5m`
-- Completion API (mark fetched/failed, set `content_hash`/`failure_reason`)
-- Lease reclamation for expired leases
-- Concurrency test: N workers, zero double-leases
+- [x] Transactional lease query (`ORDER BY priority DESC, relevance_score DESC ... FOR UPDATE SKIP LOCKED`)
+- [x] Mark leased rows `status=fetching`, `lease_expires_at=now+5m`
+- [x] Completion API (mark fetched/failed, set `content_hash`/`failure_reason`)
+- [x] Lease reclamation for expired leases
+- [x] Concurrency test: N workers, zero double-leases
 
 ### 5. Robots & politeness (`crawler/robots/`)
 
