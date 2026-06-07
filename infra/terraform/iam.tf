@@ -23,7 +23,6 @@ locals {
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/artifactregistry.reader",
-    "roles/secretmanager.secretAccessor",
   ]
 
   crawler_project_roles = concat(local.common_project_roles, [
@@ -31,6 +30,12 @@ locals {
   ])
 
   processing_project_roles = local.common_project_roles
+
+  crawler_secret_ids = {
+    db_password           = google_secret_manager_secret.db_password.secret_id
+    db_connection         = google_secret_manager_secret.db_connection.secret_id
+    crawler_contact_email = google_secret_manager_secret.crawler_contact_email.secret_id
+  }
 
   # Flatten (sa, role) pairs so we can use a single for_each per SA.
   crawler_role_bindings    = { for r in local.crawler_project_roles : r => r }
@@ -51,6 +56,15 @@ resource "google_project_iam_member" "processing" {
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.processing.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "crawler" {
+  for_each = local.crawler_secret_ids
+
+  project   = var.project_id
+  secret_id = each.value
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.crawler.email}"
 }
 
 # --- Bucket-level access (least privilege per zone) ---
