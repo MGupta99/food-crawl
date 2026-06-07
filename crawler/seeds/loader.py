@@ -100,7 +100,14 @@ def parse_seed_file(path: str | Path | None = None) -> list[RawSeed]:
         elif isinstance(entry, dict):
             if "url" not in entry:
                 raise SeedError(f"seed entry #{i} is missing 'url'")
-            parsed.append(RawSeed(url=str(entry["url"]), notes=entry.get("notes")))
+            url = entry["url"]
+            # Don't coerce: a YAML `url: null` or numeric value must not silently
+            # become the string "None"/"123" and canonicalize to e.g. https://none/.
+            if not isinstance(url, str):
+                raise SeedError(
+                    f"seed entry #{i} 'url' must be a string, got {type(url).__name__}"
+                )
+            parsed.append(RawSeed(url=url, notes=entry.get("notes")))
         else:
             raise SeedError(f"seed entry #{i} must be a string or mapping")
     return parsed

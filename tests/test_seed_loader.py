@@ -67,6 +67,20 @@ def test_parse_seed_file_requires_seeds_list(tmp_path):
         parse_seed_file(bad)
 
 
+def test_parse_seed_file_rejects_null_url(tmp_path):
+    f = tmp_path / "seeds.yaml"
+    f.write_text("seeds:\n  - url: null\n    notes: oops\n", encoding="utf-8")
+    with pytest.raises(SeedError):
+        parse_seed_file(f)
+
+
+def test_parse_seed_file_rejects_non_string_url(tmp_path):
+    f = tmp_path / "seeds.yaml"
+    f.write_text("seeds:\n  - url: 12345\n", encoding="utf-8")
+    with pytest.raises(SeedError):
+        parse_seed_file(f)
+
+
 def test_parse_seed_file_accepts_strings_and_mappings(tmp_path):
     f = tmp_path / "seeds.yaml"
     f.write_text(
