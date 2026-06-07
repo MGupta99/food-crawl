@@ -16,7 +16,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 
 from crawler.frontier.schema import metadata
 
@@ -39,7 +39,10 @@ _CONFIGURE_OPTS = {
 
 
 def _resolve_url() -> str:
-    url = config.get_main_option("sqlalchemy.url")
+    # Read from config.attributes (a plain dict set by the CLI) rather than
+    # sqlalchemy.url, to avoid ConfigParser '%' interpolation corrupting
+    # URL-encoded passwords.
+    url = config.attributes.get("dsn")
     if url:
         return url
     url = os.environ.get("FRONTIER_DSN")
@@ -63,12 +66,9 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    config.set_main_option("sqlalchemy.url", _resolve_url())
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Build the engine directly from the resolved URL so the DSN never passes
+    # through ConfigParser interpolation.
+    connectable = create_engine(_resolve_url(), poolclass=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(connection=connection, **_CONFIGURE_OPTS)
         with context.begin_transaction():

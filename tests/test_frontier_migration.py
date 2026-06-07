@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 
-from crawler.frontier.migrate import run_migrations
+from crawler.frontier.migrate import _MIGRATIONS_DIR, make_alembic_config, run_migrations
 from crawler.frontier.repository import FrontierRepository
 from crawler.frontier.schema import frontier_urls, metadata
 from crawler.seeds.loader import url_hash
@@ -55,6 +55,17 @@ def test_migrated_schema_is_functional(tmp_path):
     )
     assert repo.add_seed(seed) is True
     assert repo.count_urls() == 1
+
+
+def test_make_alembic_config_preserves_percent_encoded_dsn():
+    # A URL-encoded password (e.g. '@' -> %40, '%' -> %25) must survive: it is
+    # passed via config.attributes, not through ConfigParser interpolation.
+    dsn = "postgresql+psycopg://user:p%40ss%25word@db.internal:5432/frontier"
+    cfg = make_alembic_config(dsn)
+    assert cfg.attributes["dsn"] == dsn
+    # script_location resolves to the packaged migrations dir (works from a wheel).
+    assert cfg.get_main_option("script_location") == str(_MIGRATIONS_DIR)
+    assert (_MIGRATIONS_DIR / "env.py").is_file()
 
 
 def test_migration_matches_metadata_table_set():
