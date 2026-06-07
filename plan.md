@@ -998,11 +998,11 @@ Curated targeting inputs, the single source of truth for relevance. *Done when:*
 
 Cloud SQL tables that drive what to crawl next. *Done when:* migrations create the schema and duplicate URL inserts are no-ops.
 
-- `frontier_urls`, `host_state`, `crawl_runs` DDL + migrations
-- Indexes for lease query (`status`, `next_fetch_after`, `priority`, `relevance_score`)
-- Idempotent insert via `url_hash` `ON CONFLICT (url_hash) DO NOTHING`
-- Data-access layer (insert / update status / fetch by id)
-- Tests asserting duplicate inserts are no-ops
+- [x] `frontier_urls`, `host_state`, `crawl_runs` DDL + migrations
+- [x] Indexes for lease query (`status`, `next_fetch_after`, `priority`, `relevance_score`)
+- [x] Idempotent insert via `url_hash` `ON CONFLICT (url_hash) DO NOTHING`
+- [x] Data-access layer (insert / update status / fetch by id)
+- [x] Tests asserting duplicate inserts are no-ops
 
 ### 4. URL leasing (`crawler/leasing/`)
 

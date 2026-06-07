@@ -31,6 +31,22 @@ uv run chi-food-seeds lexicon    # summarize the topic lexicon
 uv run chi-food-seeds check      # validate seeds + lexicon parse cleanly
 ```
 
+### URL frontier
+
+The frontier lives in Cloud SQL (Postgres); schema changes are managed with
+Alembic. Set a database URL via `--dsn` or the `FRONTIER_DSN` env var (e.g. a
+Cloud SQL Auth Proxy, or `sqlite:///frontier.db` for a local smoke test).
+
+```bash
+uv run chi-food-frontier --dsn "$FRONTIER_DSN" migrate      # alembic upgrade head
+uv run chi-food-frontier --dsn "$FRONTIER_DSN" load-seeds   # load seeds into frontier
+uv run chi-food-frontier --dsn "$FRONTIER_DSN" stats        # frontier counts by status
+
+# Alembic directly (autogenerate a new revision after editing the schema):
+FRONTIER_DSN=... uv run alembic revision --autogenerate -m "describe change"
+FRONTIER_DSN=... uv run alembic upgrade head
+```
+
 ## Infrastructure
 
 The GCP foundation is managed with Terraform under `infra/terraform/`; see its
