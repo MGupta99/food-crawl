@@ -132,7 +132,9 @@ class PolitenessManager:
             )
             return rules
 
-        if 400 <= response.status < 500:
+        # 429 (rate limited) is transient, not "no robots": caching empty rules
+        # would misread a throttled host as unrestricted for the whole TTL.
+        if response.status != 429 and 400 <= response.status < 500:
             # No robots.txt (or client error): crawling is unrestricted.
             self.repo.update_host_state(
                 host,
@@ -142,7 +144,7 @@ class PolitenessManager:
             )
             return parse_robots("", self.user_agent)
 
-        # 5xx or unreachable: treat as transient. Don't cache; retry next time.
+        # 429 / 5xx / unreachable: treat as transient. Don't cache; retry later.
         return None
 
     def _robots_fresh(self, state: HostState) -> bool:

@@ -89,6 +89,11 @@ class HttpClient:
         for attempt in range(self.max_retries + 1):
             try:
                 outcome = self._attempt(url, started)
+            except httpx.TooManyRedirects as exc:
+                # Deterministic (a redirect loop / over-long chain): retrying
+                # won't help, so fail immediately with the error captured.
+                last_error = f"{type(exc).__name__}: {exc}"
+                break
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
             else:
@@ -145,7 +150,9 @@ class HttpClient:
         for chunk in response.iter_bytes():
             chunks.append(chunk)
             total += len(chunk)
-            if total >= self.max_bytes:
+            # Only truncated if the body actually exceeds the cap; a body exactly
+            # equal to max_bytes is kept whole.
+            if total > self.max_bytes:
                 truncated = True
                 break
         body = b"".join(chunks)[: self.max_bytes]

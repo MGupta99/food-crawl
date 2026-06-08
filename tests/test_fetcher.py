@@ -126,6 +126,33 @@ def test_body_is_capped_at_max_bytes():
     assert out.content_length == 100
 
 
+def test_body_exactly_max_bytes_not_truncated():
+    exact = b"x" * 100
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=exact)
+
+    with _client(handler, max_bytes=100) as client:
+        out = client.get("https://h.com/exact")
+
+    assert out.truncated is False
+    assert out.content_length == 100
+
+
+def test_too_many_redirects_captured_as_error():
+    # A redirect loop: every response points elsewhere, exceeding max_redirects.
+    def handler(request: httpx.Request) -> httpx.Response:
+        nxt = "a" if request.url.path != "/a" else "b"
+        return httpx.Response(302, headers={"location": f"https://h.com/{nxt}"})
+
+    with _client(handler, max_redirects=2, max_retries=3) as client:
+        out = client.get("https://h.com/start")
+
+    assert out.ok is False
+    assert out.status_code is None
+    assert "TooManyRedirects" in out.error
+
+
 def test_user_agent_header_sent():
     seen = {}
 
