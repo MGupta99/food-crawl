@@ -94,6 +94,16 @@ def test_5xx_is_transient_not_cached_and_blocks(repo):
     assert len(fetcher.calls) == 2  # retried because not cached
 
 
+def test_429_is_transient_not_allow_all(repo):
+    # A rate-limited robots.txt must NOT be cached as "no robots = allow all".
+    fetcher = FakeFetcher(RobotsResponse(429))
+    mgr = _mgr(repo, fetcher)
+    assert mgr.authorize("https://h.com/x").allowed is False
+    assert repo.get_host_state("h.com") is None  # nothing cached
+    mgr.authorize("https://h.com/x")
+    assert len(fetcher.calls) == 2  # retried, not served from a bogus cache
+
+
 def test_host_allow_false_is_kill_switch(repo):
     repo.update_host_state("h.com", allow=False)
     fetcher = FakeFetcher(RobotsResponse(200, ""))

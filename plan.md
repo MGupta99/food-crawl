@@ -1029,11 +1029,11 @@ Respectful, compliant crawling. *Done when:* disallowed paths are skipped and pe
 
 Polite HTTP fetch producing raw-crawl metadata. *Done when:* a small URL set is fetched with correct metadata and politeness windows respected.
 
-- HTTP client with timeouts, retries, redirect handling
-- Capture status code, content-type, bytes, fetch timestamp
-- Compute `content_hash` (sha256 of body)
-- Emit raw-crawl metadata record (matching plan JSON)
-- Local test against a few sample URLs
+- [x] HTTP client with timeouts, retries, redirect handling
+- [x] Capture status code, content-type, bytes, fetch timestamp
+- [x] Compute `content_hash` (sha256 of body)
+- [x] Emit raw-crawl metadata record (matching plan JSON)
+- [x] Local test against a few sample URLs
 
 ### 7. Canonicalizer (`crawler/canonicalizer/`)
 
