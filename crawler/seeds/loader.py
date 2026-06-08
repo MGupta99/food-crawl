@@ -4,27 +4,34 @@ Reads ``seeds.yaml`` and produces normalized :class:`FrontierSeed` records
 (``is_seed=True``, ``topic_source="seed"``, ``depth=0``) suitable for idempotent
 insertion into ``frontier_urls`` via a :class:`SeedSink`.
 
-The minimal URL normalization here is intentionally lightweight; the full
-canonicalizer (component 7, ``crawler/canonicalizer``) supersedes it once
-available. Both must agree on ``url_hash`` for idempotency, so they share the
-same scheme/host/fragment rules.
+URL normalization is delegated to :mod:`crawler.canonicalizer` (component 7) so
+seeds and discovered links share one canonical form and ``url_hash``.
 """
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
 
 import yaml
 
+from crawler.canonicalizer import CanonicalizeError, canonicalize_with_host, url_hash
+
 from .models import FrontierSeed, SeedLoadResult, SeedSink
 
+__all__ = [
+    "RawSeed",
+    "SeedError",
+    "url_hash",
+    "canonicalize_seed_url",
+    "parse_seed_file",
+    "build_frontier_seeds",
+    "load_seeds",
+    "insert_seeds",
+]
+
 _DEFAULT_RESOURCE = "seeds.yaml"
-_ALLOWED_SCHEMES = ("http", "https")
-_DEFAULT_PORTS = {"http": "80", "https": "443"}
 
 
 class SeedError(ValueError):
@@ -37,46 +44,18 @@ class RawSeed:
     notes: str | None = None
 
 
-def url_hash(canonical_url: str) -> str:
-    """Stable content-addressed id for a canonical URL."""
-    return hashlib.sha256(canonical_url.encode("utf-8")).hexdigest()
-
-
 def canonicalize_seed_url(raw_url: str) -> tuple[str, str]:
     """Return ``(canonical_url, host)`` for a seed URL.
 
-    Lowercases scheme/host, defaults a missing scheme to https, drops the
-    fragment and default ports, and ensures a non-empty path.
+    Thin wrapper over :func:`crawler.canonicalizer.canonicalize_with_host` that
+    re-raises canonicalization failures as :class:`SeedError`.
     """
     if raw_url is None:
         raise SeedError("seed url is missing")
-    candidate = raw_url.strip()
-    if not candidate:
-        raise SeedError("seed url is empty")
-
-    parts = urlsplit(candidate)
-    scheme = parts.scheme.lower()
-    # A schemeless host (e.g. "example.com/path") parses with an empty scheme;
-    # default it to https. Anything with an explicit, unsupported scheme
-    # (mailto:, tel:, ftp:, ...) is rejected.
-    if scheme == "":
-        candidate = f"https://{candidate}"
-        parts = urlsplit(candidate)
-        scheme = parts.scheme.lower()
-    if scheme not in _ALLOWED_SCHEMES:
-        raise SeedError(f"unsupported scheme {scheme!r} in seed url {raw_url!r}")
-
-    host = (parts.hostname or "").lower()
-    if not host:
-        raise SeedError(f"seed url has no host: {raw_url!r}")
-
-    netloc = host
-    if parts.port is not None and str(parts.port) != _DEFAULT_PORTS.get(scheme):
-        netloc = f"{host}:{parts.port}"
-
-    path = parts.path or "/"
-    canonical = urlunsplit((scheme, netloc, path, parts.query, ""))
-    return canonical, host
+    try:
+        return canonicalize_with_host(raw_url)
+    except CanonicalizeError as exc:
+        raise SeedError(str(exc)) from exc
 
 
 def parse_seed_file(path: str | Path | None = None) -> list[RawSeed]:

@@ -14,6 +14,7 @@ crawler/           # focused crawler components
   leasing/         # concurrent-safe URL leasing
   robots/          # robots.txt compliance + per-host politeness
   fetcher/         # polite HTTP client + raw-crawl metadata
+  canonicalizer/   # URL canonicalization + stable url_hash
 tests/             # unit tests
 ```
 
@@ -71,6 +72,17 @@ errors captured rather than raised); `build_raw_record()` turns that plus
 frontier context into the `RawCrawlRecord` metadata document from `plan.md`.
 `make_robots_fetcher(client)` adapts the client into the politeness layer's
 `RobotsFetcher`, wiring components 5 and 6 together.
+
+### Canonicalizer
+
+`crawler/canonicalizer/` is the authoritative URL normalizer. `canonicalize(url,
+base=...)` resolves relative links, requires `http`/`https` (rejecting
+`mailto:`/`javascript:`/`tel:`/`data:`/`ftp:`), lowercases scheme/host, drops
+userinfo and default ports, strips the fragment, normalizes the path (resolves
+`.`/`..`, collapses duplicate slashes, removes a non-root trailing slash), and
+normalizes the query (drops `utm_*`/`gclid`/`fbclid`/... tracking params, sorts
+the rest). `url_hash()` derives the stable frontier id from the canonical form;
+`crawler/seeds/` delegates here so seeds and discovered links dedup identically.
 
 ## Infrastructure
 
