@@ -13,6 +13,7 @@ crawler/           # focused crawler components
   frontier/        # URL frontier schema, repository, migrations
   leasing/         # concurrent-safe URL leasing
   robots/          # robots.txt compliance + per-host politeness
+  fetcher/         # polite HTTP client + raw-crawl metadata
 tests/             # unit tests
 ```
 
@@ -59,6 +60,17 @@ FRONTIER_DSN=... uv run alembic upgrade head
 authorizes individual paths, and advances `next_allowed_fetch_at` to honor
 crawl-delay (one in-flight request per host). HTTP is injected as a
 `RobotsFetcher`, so the real fetcher (component 6) plugs in without coupling.
+
+### Fetcher
+
+`crawler/fetcher/` is a polite HTTP client (`HttpClient`, over `httpx`) with
+connect/read timeouts, bounded redirects, retries with exponential backoff on
+network errors and `429`/`5xx`, and a streamed body-size cap. Each fetch returns
+a `FetchOutcome` (status, body, `sha256:` content hash, timing, transport
+errors captured rather than raised); `build_raw_record()` turns that plus
+frontier context into the `RawCrawlRecord` metadata document from `plan.md`.
+`make_robots_fetcher(client)` adapts the client into the politeness layer's
+`RobotsFetcher`, wiring components 5 and 6 together.
 
 ## Infrastructure
 
