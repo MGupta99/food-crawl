@@ -1049,10 +1049,10 @@ Normalize URLs so dedup and idempotency work. *Done when:* equivalent URLs canon
 
 Find outbound links for discovery. *Done when:* links are extracted and passed through the canonicalizer.
 
-- Parse HTML and extract `<a href>` (+ rel/nofollow awareness)
-- Pipe extracted links through the canonicalizer
-- De-duplicate links within a page
-- Tests on sample HTML fixtures
+- [x] Parse HTML and extract `<a href>` (+ rel/nofollow awareness)
+- [x] Pipe extracted links through the canonicalizer
+- [x] De-duplicate links within a page
+- [x] Tests on sample HTML fixtures
 
 ### 9. Discovery-time URL relevance (`crawler/relevance/`)
 

@@ -15,6 +15,7 @@ crawler/           # focused crawler components
   robots/          # robots.txt compliance + per-host politeness
   fetcher/         # polite HTTP client + raw-crawl metadata
   canonicalizer/   # URL canonicalization + stable url_hash
+  link_extractor/  # outbound-link extraction for discovery
 tests/             # unit tests
 ```
 
@@ -83,6 +84,15 @@ userinfo and default ports, strips the fragment, normalizes the path (resolves
 normalizes the query (drops `utm_*`/`gclid`/`fbclid`/... tracking params, sorts
 the rest). `url_hash()` derives the stable frontier id from the canonical form;
 `crawler/seeds/` delegates here so seeds and discovered links dedup identically.
+
+### Link extractor
+
+`crawler/link_extractor/` parses `<a href>` anchors from fetched HTML (stdlib
+`html.parser`, lenient about malformed markup), resolves them against the
+document base (honoring `<base href>`), pipes each through the canonicalizer,
+and de-duplicates per page. It tracks `rel="nofollow"`/`ugc`/`sponsored` (a URL
+is `nofollow` only if every anchor to it is) so the crawler can deprioritize
+untrusted links.
 
 ## Infrastructure
 
