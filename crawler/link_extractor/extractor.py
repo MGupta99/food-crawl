@@ -39,7 +39,7 @@ class _LinkParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "base":
             attr = dict(attrs)
-            href = attr.get("href")
+            href = (attr.get("href") or "").strip()
             if href and self.base_href is None:  # first <base href> wins
                 self.base_href = href
             return

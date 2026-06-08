@@ -89,6 +89,15 @@ def test_base_href_overrides_document_base():
     assert links[0].canonical_url == "https://cdn.blog.com/app/img/page"
 
 
+def test_base_href_is_whitespace_stripped():
+    html = """
+      <head><base href="  https://cdn.blog.com/app/  "></head>
+      <body><a href="img/page">x</a></body>
+    """
+    links = extract_links(html, BASE)
+    assert links[0].canonical_url == "https://cdn.blog.com/app/img/page"
+
+
 def test_anchor_without_href_ignored():
     html = '<a name="anchor">no href</a><a href="/ok">ok</a>'
     links = extract_links(html, BASE)
