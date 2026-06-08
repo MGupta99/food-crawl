@@ -1039,11 +1039,11 @@ Polite HTTP fetch producing raw-crawl metadata. *Done when:* a small URL set is 
 
 Normalize URLs so dedup and idempotency work. *Done when:* equivalent URLs canonicalize identically and rejected schemes are dropped.
 
-- Resolve relative URLs against base
-- Strip fragments; normalize host/case/default ports/trailing slash
-- Drop unsupported schemes (`mailto:`/`javascript:`/`tel:`/`data:`)
-- Compute stable `url_hash` from canonical URL
-- Tests covering equivalence classes + rejected schemes
+- [x] Resolve relative URLs against base
+- [x] Strip fragments; normalize host/case/default ports/trailing slash
+- [x] Drop unsupported schemes (`mailto:`/`javascript:`/`tel:`/`data:`)
+- [x] Compute stable `url_hash` from canonical URL
+- [x] Tests covering equivalence classes + rejected schemes
 
 ### 8. Link extractor (`crawler/link_extractor/`)
 
